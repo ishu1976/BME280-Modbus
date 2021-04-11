@@ -1,2 +1,2 @@
 # BME280-Modbus
- A simple Arduino Nano based board used to read data from a BME280 sensor and transmit it via Modbus RTU to the main weater station
+A simple Arduino Nano based board used to read data from a BME280 sensor and transmit it via Modbus RTU to the main weater station. The card returns the main temperature parameters. It also has an automatic ventilation control to avoid BME280 sensor reading errors caused by stagnant air inside the sun shield. All the data collected and calculated are transmitted to the weather station by means of the Modbus RTU protocol (RS485) operating at the speed of 9600 bit/s.

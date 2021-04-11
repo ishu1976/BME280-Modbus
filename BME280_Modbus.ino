@@ -2,7 +2,10 @@
  Name:			BME280_Modbus.ino
  Created:		07/04/2021 20:19:39
  Author:		Andrea Santinelli
- Descriptions:	Temperature sensor based on BME280 sensor with modbus RTU data trasmission
+  
+ A simple Arduino Nano based board used to read data from a BME280 sensor and transmit it via Modbus RTU to the main weater station.
+ The card returns the main temperature parameters. It also has an automatic ventilation control to avoid BME280 sensor reading errors caused by stagnant air inside the sun shield. 
+ All the data collected and calculated are transmitted to the weather station by means of the Modbus RTU protocol (RS485) operating at the speed of 9600 bit/s.
 
  Libraries used in the project:
  - https://github.com/adafruit/Adafruit_BME280_Library
@@ -22,31 +25,31 @@
 
 #pragma region DECLARATIONS
 /* local defines */
-#define REFRESH_TIME_DEFAULT_VALUE		15				// set 15 second of default refresh time
-#define FAN_OFF_HYSTERESIS				15				// set 1.5°C of hysteresis
-#define FAN_START_TEMP_DEFAULT_VALUE	250				// set to 250°C
-#define FAN_ON_TIME_DEFAULT_VALUE		240				// set to 4 min.
-#define FAN_OFF_TIME_DEFAULT_VALUE		30				// set to 30 sec.
-#define SERIAL_PRINT
-/* step of fan control */
-#define IDLE							0
-#define TIMER_RESET						1
-#define VENTILATION_ACTIVE				2
-#define VENTILATION_INACTIVE			3
-#define CHECK_TEMPERATURE				4
+#define REFRESH_TIME_DEFAULT_VALUE	15	// set 15 second of default refresh time
+#define FAN_ON_TIME_DEFAULT_VALUE	240	// set to 4 min.
+#define FAN_OFF_TIME_DEFAULT_VALUE	30	// set to 30 sec.
+#define SERIAL_PRINT				// comment this define to deactivate print on serial monitor
+/* step of fan controller */
+#define START_CONDITIONS		0
+#define TIMER_RESET				1
+#define VENTILATION_ACTIVE		2
+#define VENTILATION_INACTIVE	3
+#define STOP_CONDITIONS			4
 
 /* global var declaration*/
 char softwareVersion[]		= "2104.07";					// software version
 ulong millisAtLoopBegin		= 0;							// millis value at the begin of loop
-word fanStartTemperature	= FAN_START_TEMP_DEFAULT_VALUE;
-int fanControlStep			= IDLE;
+int fanControlStep			= START_CONDITIONS;
 bool setupIsDone			= false;						// is TRUE when setup is completed with no error
 int oldFanState				= LOW;
+word actualWindVelocity		= 0; 
 
 /* structured global var for timing */
 ST_Timer stRefreshTimer;
 ST_Timer stFanOnTimer;
 ST_Timer stFanOffTimer;
+ST_Comparator stTemperature;
+ST_Comparator stWindVelocity;
 
 /* output connected var */
 int doRunState				= LOW;							// rapresents the state of GREEN led on sensor board
@@ -78,13 +81,19 @@ void setup()
 	digitalWrite(ERROR_LED, doErrorState);
 	digitalWrite(FAN, doFanState);
 
-	/* init strucured var */
+	/* init structured var used for timers */
 	stRefreshTimer.PT	= REFRESH_TIME_DEFAULT_VALUE;
 	stRefreshTimer.ET	= stRefreshTimer.PT * 1000;
 	stFanOnTimer.PT		= FAN_ON_TIME_DEFAULT_VALUE;
 	stFanOnTimer.ET		= 0;
 	stFanOffTimer.PT	= FAN_OFF_TIME_DEFAULT_VALUE;
 	stFanOffTimer.ET	= 0;
+
+	/* init structured var used for comparators */
+	stTemperature.threshold		= 250;	// 250 means 25.0°C
+	stTemperature.HYSTERESYS	= 25;	// 25 means 2.5°C
+	stWindVelocity.threshold	= 30;	// 30 means 3.0 m/s
+	stWindVelocity.HYSTERESYS	= 5;	// 5 means 0.5 m/s
 
 	/* init serial at modbus speed */
 	Serial.begin(MODBUS_SPEED);
@@ -154,7 +163,9 @@ void setup()
 	ModbusRTU.addHreg(ABS_HUMIDITY_HREG, absHumidity);
 	/* add registers to modbus configuration: write holding registers*/
 	ModbusRTU.addHreg(WEATER_DATA_REFRESH_TIME, stRefreshTimer.PT);
-	ModbusRTU.addHreg(FAN_START_TEMPERATURE, fanStartTemperature);
+	ModbusRTU.addHreg(ACTUAL_WIND_VELOCITY, actualWindVelocity);
+	ModbusRTU.addHreg(WIND_VELOCITY_THRESHOLD, stWindVelocity.threshold);
+	ModbusRTU.addHreg(TEMPERATURE_THRESHOLD, stTemperature.threshold);
 	ModbusRTU.addHreg(FAN_ON_TIME_HREG, stFanOnTimer.PT);
 	ModbusRTU.addHreg(FAN_OFF_TIME_HREG, stFanOffTimer.PT);
 	/* modbus configuration completed */
@@ -189,10 +200,11 @@ void loop()
 	ModbusRTU.task();
 
 	/* update Modbus configuration registers */
-	stRefreshTimer.PT	= constrain(ModbusRTU.Hreg(WEATER_DATA_REFRESH_TIME), 1, 240);	// min: 1 sec.  max: 4 min.
-	stFanOffTimer.PT	= constrain(ModbusRTU.Hreg(FAN_OFF_TIME_HREG), 30, 600);		// min: 30 sec. max: 10 min.
-	stFanOnTimer .PT	= constrain(ModbusRTU.Hreg(FAN_ON_TIME_HREG), 30, 600);			// min: 30 sec. max: 10 min.
-	fanStartTemperature = constrain(ModbusRTU.Hreg(FAN_START_TEMPERATURE), 100, 350);	// min: 10°C.   max: 35°C
+	stRefreshTimer.PT	= constrain(ModbusRTU.Hreg(WEATER_DATA_REFRESH_TIME), 1, 240);		// min: 1 sec.  max: 4 min.
+	stFanOffTimer.PT	= constrain(ModbusRTU.Hreg(FAN_OFF_TIME_HREG), 30, 600);			// min: 30 sec. max: 10 min.
+	stFanOnTimer .PT	= constrain(ModbusRTU.Hreg(FAN_ON_TIME_HREG), 30, 600);				// min: 30 sec. max: 10 min.
+	stWindVelocity.threshold = constrain(ModbusRTU.Hreg(WIND_VELOCITY_THRESHOLD), 10, 100);	// min: 1 m/s   max: 10 m/s
+	stTemperature.threshold  = constrain(ModbusRTU.Hreg(TEMPERATURE_THRESHOLD), 100, 350);	// min: 10°C.   max: 35°C
 
 	/* get values only if setup is done (otherwise it means that the BME280 sensor is in error) */
 	if (setupIsDone)
@@ -220,9 +232,9 @@ void loop()
 		/* sensor ventilation control */
 		switch (fanControlStep)
 		{	//--------------------------------------------------------------------------
-			case IDLE:
-				/* check if temperature requires to use a fan */
-				if (actualTemperature > fanStartTemperature)
+			case START_CONDITIONS:
+				/* check if temperature and wind speed require to use ventilation */
+				if ((actualTemperature > stTemperature.threshold) && (actualWindVelocity < stWindVelocity.threshold))
 				{
 					/* reset timer before cycle */
 					fanControlStep = TIMER_RESET;
@@ -261,15 +273,15 @@ void loop()
 				}
 				else
 				{
-					fanControlStep = CHECK_TEMPERATURE;
+					fanControlStep = STOP_CONDITIONS;
 				}
 				break;
 			//--------------------------------------------------------------------------
-			case CHECK_TEMPERATURE:
-				/* define if temperature requires to switch off fan */
-				if (actualTemperature <= (fanStartTemperature - FAN_OFF_HYSTERESIS))
+			case STOP_CONDITIONS:
+				/* check if temperature or wind speed allows to switch off the ventilation */
+				if ((actualTemperature <= (stTemperature.threshold - stTemperature.HYSTERESYS)) || (actualWindVelocity >= (stWindVelocity.threshold + stWindVelocity.HYSTERESYS)))
 				{
-					fanControlStep = IDLE;
+					fanControlStep = START_CONDITIONS;
 				}
 				else
 				{

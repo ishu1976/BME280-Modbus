@@ -31,8 +31,10 @@ ModbusSerial ModbusRTU;
 
 /* modbus holding registers - read */
 #define WEATER_DATA_REFRESH_TIME	200		// register 200
-#define FAN_START_TEMPERATURE		201		// register 201
-#define FAN_ON_TIME_HREG			202		// register 203
-#define FAN_OFF_TIME_HREG			203		// register 202
+#define ACTUAL_WIND_VELOCITY		201		// register 201
+#define WIND_VELOCITY_THRESHOLD		202		// register 202
+#define TEMPERATURE_THRESHOLD		203		// register 203
+#define FAN_ON_TIME_HREG			204		// register 204
+#define FAN_OFF_TIME_HREG			205		// register 205
 
 #endif

@@ -36,4 +36,10 @@ struct ST_Timer
 	ulong PT = 0;
 	ulong ET = 0;
 };
+struct ST_Comparator
+{
+	word threshold;
+	word HYSTERESYS;	// used like a constant
+};
+
 #endif

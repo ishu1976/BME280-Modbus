@@ -47,4 +47,5 @@ float GetAbsHumidity(float refTemp, float refHum, E_TempUnit eTempUnit);
 float GetWetBulbTemp(float refTemp, float refHum, float refPress, E_TempUnit eTempUnit);
 float SetFahrenheit(float refTempC);
 float SetCelsius(float refTempF);
+
 #endif

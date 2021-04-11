@@ -1,7 +1,8 @@
 /*
- Name:		Functions.h
- Created:	08/04/2021
- Author:	Andrea Santinelli
+ Name:		    Functions.cpp
+ Created:	    08/04/2021
+ Author:        Andrea Santinelli
+ Description:   Header file for Function.cpp
 */
 
 #ifndef _Functions_h

@@ -1,7 +1,8 @@
 /*
- Name:		ModbusCfg.h
- Created:	07/04/2021
- Author:	Andrea Santinelli
+ Name:			ModbusCfg.h
+ Created:		07/04/2021
+ Author:		Andrea Santinelli
+ Description:	Header file for modbus configuration
 */
 
 #ifndef _ModbusCfg_h

@@ -1,9 +1,10 @@
 /*
- Name:		BME280_Modbus.ino
- Created:	07/04/2021 20:19:39
- Author:	Andrea Santinelli
+ Name:			BME280_Modbus.ino
+ Created:		07/04/2021 20:19:39
+ Author:		Andrea Santinelli
+ Descriptions:	Temperature sensor based on BME280 sensor with modbus RTU data trasmission
 
- Libraries from github:
+ Libraries used in the project:
  - https://github.com/adafruit/Adafruit_BME280_Library
  - https://github.com/andresarmento/modbus-arduino
 */

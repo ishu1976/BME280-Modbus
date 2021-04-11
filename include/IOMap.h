@@ -14,18 +14,18 @@
 /* class definitions */
 Adafruit_BME280 BME280;
 
-/* BME280 RESERVED PINS (only for SPI mode) */
+/* BME280 reserved pins (only for SPI mode) */
 #define BME_CS			10
 #define BME_MOSI		11
 #define BME_MISO		12
 #define BME_SCK			13
 
-/* APPLICATION PINS */
+/* application pins */
 #define FAN				8
 #define RUN_LED			7
 #define ERROR_LED		5
 
-/* MISCELLANEA */
+/* miscellanea */
 #define TASK_TIME		10		// Cycle time (ms)
 #define ulong			unsigned long
 #define uint			unsigned int

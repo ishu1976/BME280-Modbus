@@ -28,7 +28,7 @@
 #define REFRESH_TIME_DEFAULT_VALUE	15	// set 15 second of default refresh time
 #define FAN_ON_TIME_DEFAULT_VALUE	240	// set to 4 min.
 #define FAN_OFF_TIME_DEFAULT_VALUE	30	// set to 30 sec.
-#define SERIAL_PRINT				// comment this define to deactivate print on serial monitor
+#define SERIAL_PRINT					// comment this define to deactivate print on serial monitor
 /* step of fan controller */
 #define START_CONDITIONS		0
 #define TIMER_RESET				1
@@ -37,12 +37,12 @@
 #define STOP_CONDITIONS			4
 
 /* global var declaration*/
-char softwareVersion[]		= "2104.07";					// software version
-ulong millisAtLoopBegin		= 0;							// millis value at the begin of loop
-int fanControlStep			= START_CONDITIONS;
-bool setupIsDone			= false;						// is TRUE when setup is completed with no error
-int oldFanState				= LOW;
-word actualWindVelocity		= 0; 
+char softwareVersion[]	= "2104.07";		// software version
+ulong millisAtLoopBegin	= 0;				// millis value at the begin of loop
+int fanControlStep		= START_CONDITIONS;
+bool setupIsDone		= false;			// is TRUE when setup is completed with no error
+int oldFanState			= LOW;
+word actualWindVelocity	= 0; 
 
 /* structured global var for timing */
 ST_Timer stRefreshTimer;
@@ -52,20 +52,20 @@ ST_Comparator stTemperature;
 ST_Comparator stWindVelocity;
 
 /* output connected var */
-int doRunState				= LOW;							// rapresents the state of GREEN led on sensor board
-int doErrorState			= LOW;							// rapresents the state of RED led on sensor board
-int doFanState				= LOW;							// represents the state of sensor fan
+int doRunState		= LOW;	// rapresents the state of GREEN led on sensor board
+int doErrorState	= LOW;	// rapresents the state of RED led on sensor board
+int doFanState		= LOW;	// represents the state of sensor fan
 
 /* data read from BME280 */
-word actualTemperature		= 0;
-word actualPressure			= 0;
-word actualHumidity			= 0;
+word actualTemperature	= 0;
+word actualPressure		= 0;
+word actualHumidity		= 0;
 
 /* data calculated */
-word wetBulbTemperature		= 0;
-word dewPoint				= 0;
-word heatIndex				= 0;
-word absHumidity			= 0;
+word wetBulbTemperature	= 0;
+word dewPoint			= 0;
+word heatIndex			= 0;
+word absHumidity		= 0;
 #pragma endregion
 
 /* the setup function runs once when you press reset or power the board */
@@ -90,8 +90,10 @@ void setup()
 	stFanOffTimer.ET	= 0;
 
 	/* init structured var used for comparators */
+	/* temperature comparator */
 	stTemperature.threshold		= 250;	// 250 means 25.0°C
 	stTemperature.HYSTERESYS	= 25;	// 25 means 2.5°C
+	/* wind velocity comparator */
 	stWindVelocity.threshold	= 30;	// 30 means 3.0 m/s
 	stWindVelocity.HYSTERESYS	= 5;	// 5 means 0.5 m/s
 
@@ -323,20 +325,20 @@ void F_GetValues()
 	float _actualPressure		= BME280.readPressure() / 100.0F;
 	float _actualHumidity		= BME280.readHumidity();
 
-	/* indirec data: All data have been calculated */
+	/* indirect data: All data have been calculated */
 	float _wetBulbTemperature	= GetWetBulbTemp(_actualTemperature, _actualHumidity, _actualPressure, isCelsius);
 	float _dewPoint				= GetDewPoint	(_actualTemperature, _actualHumidity, isCelsius);
 	float _heatIndex			= GetHeatIndex	(_actualTemperature, _actualHumidity, isCelsius);
 	float _absHumidity			= GetAbsHumidity(_actualTemperature, _actualHumidity, isCelsius);
 
 	/* conversion */
-	actualTemperature			= F_FloatToWord(_actualTemperature, 1);
-	actualPressure				= F_FloatToWord(_actualPressure, 1);
-	actualHumidity				= F_FloatToWord(_actualHumidity, 1);
-	wetBulbTemperature			= F_FloatToWord(_wetBulbTemperature, 1);
-	dewPoint					= F_FloatToWord(_dewPoint, 1);
-	heatIndex					= F_FloatToWord(_heatIndex, 1);
-	absHumidity					= F_FloatToWord(_absHumidity, 1);
+	actualTemperature	= F_FloatToWord(_actualTemperature, 1);
+	actualPressure		= F_FloatToWord(_actualPressure, 1);
+	actualHumidity		= F_FloatToWord(_actualHumidity, 1);
+	wetBulbTemperature	= F_FloatToWord(_wetBulbTemperature, 1);
+	dewPoint			= F_FloatToWord(_dewPoint, 1);
+	heatIndex			= F_FloatToWord(_heatIndex, 1);
+	absHumidity			= F_FloatToWord(_absHumidity, 1);
 
 	/* print data on serial monitor  */
 	#ifdef SERIAL_PRINT

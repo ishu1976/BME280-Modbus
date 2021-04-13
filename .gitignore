@@ -1,10 +1,11 @@
 
+# Ignore the following files
 .vs/BME280_Modbus/v16/.suo
 .vs/BME280_Modbus/v16/Browse.VC.db
 *.ipch
 *.db
 .vs/BME280_Modbus/v16/.suo
 
-# Ignore the node_modules directory
+# Ignore the following directories
 .vs/
 __vm/

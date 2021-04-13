@@ -30,18 +30,15 @@
 #define FAN_OFF_TIME_DEFAULT_VALUE	30	// set to 30 sec.
 #define SERIAL_PRINT					// comment this define to deactivate print on serial monitor
 /* step of fan controller */
-#define START_CONDITIONS		0
-#define TIMER_RESET				1
-#define VENTILATION_ACTIVE		2
-#define VENTILATION_INACTIVE	3
-#define STOP_CONDITIONS			4
+#define VENTILATION_IDLE			0
+#define VENTILATION_ACTIVE			1
+#define VENTILATION_INACTIVE		2
 
 /* global var declaration*/
 char softwareVersion[]	= "2104.07";		// software version
 ulong millisAtLoopBegin	= 0;				// millis value at the begin of loop
-int fanControlStep		= START_CONDITIONS;
+bool fanControlStep		= VENTILATION_IDLE;
 bool setupIsDone		= false;			// is TRUE when setup is completed with no error
-int oldFanState			= LOW;
 word actualWindVelocity	= 0; 
 
 /* structured global var for timing */
@@ -179,7 +176,7 @@ void setup()
 /* the loop function runs over and over again until power down or reset */
 void loop()
 {
-	/* get millis value at loop begin */
+	/* START LOOP: get millis value at loop begin */
 	millisAtLoopBegin = millis();
 
 	/* init output state */
@@ -231,27 +228,49 @@ void loop()
 			ModbusRTU.Hreg(ABS_HUMIDITY_HREG, absHumidity);
 		}
 
-		/* sensor ventilation control */
-		switch (fanControlStep)
-		{	//--------------------------------------------------------------------------
-			case START_CONDITIONS:
-				/* check if temperature and wind speed require to use ventilation */
-				if ((actualTemperature > stTemperature.threshold) && (actualWindVelocity < stWindVelocity.threshold))
-				{
-					/* reset timer before cycle */
-					fanControlStep = TIMER_RESET;
-				}
-				break;
-			//--------------------------------------------------------------------------
-			case TIMER_RESET:
-				stFanOnTimer.ET  = 0;
+		/* check if temperature or wind speed allows to switch off the ventilation */
+		if ((actualTemperature <= (stTemperature.threshold - stTemperature.HYSTERESYS)) || (actualWindVelocity >= (stWindVelocity.threshold + stWindVelocity.HYSTERESYS)))
+		{
+			/* init control variables */
+			fanControlStep = VENTILATION_IDLE;
+			/* if fan is active.. */
+			if (doFanState == HIGH)
+			{	
+				/* ..deactivate it and.. */
+				doFanState = LOW;
+				/* ..print info about ventilation */
+				#ifdef SERIAL_PRINT
+				Serial.print(F("Sensor ventilation is: INACTIVE"));
+				Serial.println(doFanState);
+				Serial.println();
+				#endif
+			}
+		}
+		/* check if temperature and wind speed require to use ventilation */
+		else if (((actualTemperature > stTemperature.threshold) && (actualWindVelocity < stWindVelocity.threshold)) || (fanControlStep != VENTILATION_IDLE))
+		{
+			/* sensor ventilation control */
+			if (fanControlStep == VENTILATION_IDLE)
+			{
+				/* init timers */
 				stFanOffTimer.ET = 0;
-				fanControlStep	 = VENTILATION_ACTIVE;
-				break;
-			//--------------------------------------------------------------------------
-			case VENTILATION_ACTIVE:
-				/* activate fan */
-				doFanState = HIGH;
+				stFanOnTimer.ET  = 0;
+				fanControlStep 	 = VENTILATION_ACTIVE;
+			}
+			else if (fanControlStep = VENTILATION_ACTIVE)
+			{
+				/* if fan is inactive.. */
+				if (doFanState == LOW)
+				{
+					/* ..activate it and.. */
+					doFanState = HIGH;
+					/* ..print info about ventilation */
+					#ifdef SERIAL_PRINT
+					Serial.print(F("Sensor ventilation is: ACTIVE"));
+					Serial.println(doFanState);
+					Serial.println();
+					#endif
+				}	
 				/* count elapsed time at HIGH level by using fixed task time */
 				if (stFanOnTimer.ET < (stFanOnTimer.PT * 1000))
 				{
@@ -260,13 +279,25 @@ void loop()
 				}
 				else
 				{
+					/* prepare for fan deactivation */
+					stFanOffTimer.ET = 0;					
 					fanControlStep = VENTILATION_INACTIVE;
 				}
-				break;
-			//--------------------------------------------------------------------------
-			case VENTILATION_INACTIVE:
-				/* deactivate fan */
-				doFanState = LOW;
+			}
+			else if (fanControlStep = VENTILATION_INACTIVE)
+			{
+				/* if fan is active.. */
+				if (doFanState == HIGH)
+				{	
+					/* ..deactivate it and.. */
+					doFanState = LOW;
+					/* ..print info about ventilation */
+					#ifdef SERIAL_PRINT
+					Serial.print(F("Sensor ventilation is: INACTIVE"));
+					Serial.println(doFanState);
+					Serial.println();
+					#endif
+				}	
 				/* count elapsed time at LOW level by using fixed task time */
 				if (stFanOffTimer.ET < (stFanOffTimer.PT *1000))
 				{
@@ -275,41 +306,20 @@ void loop()
 				}
 				else
 				{
-					fanControlStep = STOP_CONDITIONS;
+					/* prepare for fan activation */
+					stFanOnTimer.ET = 0;					
+					fanControlStep = VENTILATION_ACTIVE;
 				}
-				break;
-			//--------------------------------------------------------------------------
-			case STOP_CONDITIONS:
-				/* check if temperature or wind speed allows to switch off the ventilation */
-				if ((actualTemperature <= (stTemperature.threshold - stTemperature.HYSTERESYS)) || (actualWindVelocity >= (stWindVelocity.threshold + stWindVelocity.HYSTERESYS)))
-				{
-					fanControlStep = START_CONDITIONS;
-				}
-				else
-				{
-					fanControlStep = TIMER_RESET;
-				}
-				break;
+			}
 		}
 	}
-
-	/* print info about ventilation */
-	#ifdef SERIAL_PRINT
-	if (doFanState != oldFanState)
-	{
-		oldFanState = doFanState;
-		Serial.print(F("Sensor ventilation is: "));
-		Serial.println(doFanState);
-		Serial.println();
-	}
-	#endif
 
 	/* write digital output */
 	digitalWrite(RUN_LED, doRunState);
 	digitalWrite(ERROR_LED, doErrorState);
 	digitalWrite(FAN, doFanState);
-
-	/* wait task time (every loop has a fixed duration) */
+	
+	/* END LOOP: wait task time (every loop has a fixed duration) */
 	while ((millis() - millisAtLoopBegin) <= TASK_TIME);
 }
 

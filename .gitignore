@@ -4,3 +4,7 @@
 *.ipch
 *.db
 .vs/BME280_Modbus/v16/.suo
+
+# Ignore the node_modules directory
+.vs/
+__vm/

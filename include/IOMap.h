@@ -26,20 +26,20 @@ Adafruit_BME280 BME280;
 #define ERROR_LED	5
 
 /* miscellanea */
-#define TASK_TIME	10		// Cycle time (ms)
-#define ulong		unsigned long
-#define uint		unsigned int
+#define TASK_TIME	10	// Cycle time (10 ms)
+#define ulong		unsigned long int	
+#define uint		unsigned short int
 
 /* structure definitions */
 struct ST_Timer
 {	/* structure used to define a timer function */
-	ulong PT = 0;
-	ulong ET = 0;
+	uint PT = 0;
+	uint ET = 0;
 };
 struct ST_Comparator
 {	/* structure used to define a comparator function */
 	word threshold;
-	word HYSTERESYS;	// uppercase means that this structure element is used like a constant
+	word HYSTERESYS;	// uppercase means that this element is used as a constant value
 };
 
 #endif

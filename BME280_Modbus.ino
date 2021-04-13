@@ -29,6 +29,7 @@
 #define FAN_ON_TIME_DEFAULT_VALUE	240	// set to 4 min.
 #define FAN_OFF_TIME_DEFAULT_VALUE	30	// set to 30 sec.
 #define SERIAL_PRINT					// comment this define to deactivate print on serial monitor
+
 /* step of fan controller */
 #define VENTILATION_IDLE			0
 #define VENTILATION_ACTIVE			1
@@ -37,7 +38,7 @@
 /* global var declaration*/
 char softwareVersion[]	= "2104.07";		// software version
 ulong millisAtLoopBegin	= 0;				// millis value at the begin of loop
-bool fanControlStep		= VENTILATION_IDLE;
+word fanControlStep		= VENTILATION_IDLE;
 bool setupIsDone		= false;			// is TRUE when setup is completed with no error
 word actualWindVelocity	= 0; 
 
@@ -199,10 +200,10 @@ void loop()
 	ModbusRTU.task();
 
 	/* update Modbus configuration registers */
-	stRefreshTimer.PT	= constrain(ModbusRTU.Hreg(WEATER_DATA_REFRESH_TIME), 1, 240);		// min: 1 sec.  max: 4 min.
-	stFanOffTimer.PT	= constrain(ModbusRTU.Hreg(FAN_OFF_TIME_HREG), 30, 600);			// min: 30 sec. max: 10 min.
-	stFanOnTimer .PT	= constrain(ModbusRTU.Hreg(FAN_ON_TIME_HREG), 30, 600);				// min: 30 sec. max: 10 min.
-	stWindVelocity.threshold = constrain(ModbusRTU.Hreg(WIND_VELOCITY_THRESHOLD), 10, 100);	// min: 1 m/s   max: 10 m/s
+	stRefreshTimer.PT	= constrain(ModbusRTU.Hreg(WEATER_DATA_REFRESH_TIME), 1, 240);		// min: 1 sec.  max: 240 sec. (4 min.)
+	stFanOffTimer.PT	= constrain(ModbusRTU.Hreg(FAN_OFF_TIME_HREG), 30, 600);			// min: 30 sec. max: 600 sec. (10 min.)
+	stFanOnTimer .PT	= constrain(ModbusRTU.Hreg(FAN_ON_TIME_HREG), 30, 600);				// min: 30 sec. max: 600 sec. (10 min.)
+	stWindVelocity.threshold = constrain(ModbusRTU.Hreg(WIND_VELOCITY_THRESHOLD), 10, 100);	// min: 1.0 m/s max: 10.0 m/s
 	stTemperature.threshold  = constrain(ModbusRTU.Hreg(TEMPERATURE_THRESHOLD), 100, 350);	// min: 10°C.   max: 35°C
 
 	/* get values only if setup is done (otherwise it means that the BME280 sensor is in error) */
@@ -257,7 +258,7 @@ void loop()
 				stFanOnTimer.ET  = 0;
 				fanControlStep 	 = VENTILATION_ACTIVE;
 			}
-			else if (fanControlStep = VENTILATION_ACTIVE)
+			else if (fanControlStep == VENTILATION_ACTIVE)
 			{
 				/* if fan is inactive.. */
 				if (doFanState == LOW)
@@ -284,7 +285,7 @@ void loop()
 					fanControlStep = VENTILATION_INACTIVE;
 				}
 			}
-			else if (fanControlStep = VENTILATION_INACTIVE)
+			else if (fanControlStep == VENTILATION_INACTIVE)
 			{
 				/* if fan is active.. */
 				if (doFanState == HIGH)
@@ -323,8 +324,7 @@ void loop()
 	while ((millis() - millisAtLoopBegin) <= TASK_TIME);
 }
 
-/* cyclic function used to read data from BME280 sensor
-   all data will be stored in modbus registers */
+/* cyclic function used to read data from BME280 sensor */
 void F_GetValues()
 {
 	/* init loop timer for next call */

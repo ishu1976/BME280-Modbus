@@ -29,7 +29,7 @@ ModbusSerial ModbusRTU;
 #define HEAT_INDEX					105		// register 105, heat index temperature - calculated
 #define ABS_HUMIDITY_HREG			106		// register 106, absolute humidity - calculated
 
-/* modbus holding registers - read */
+/* modbus holding registers - write */
 #define WEATER_DATA_REFRESH_TIME	200		// register 200
 #define ACTUAL_WIND_VELOCITY		201		// register 201
 #define WIND_VELOCITY_THRESHOLD		202		// register 202

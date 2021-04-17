@@ -25,6 +25,10 @@ Adafruit_BME280 BME280;
 #define RUN_LED		7
 #define ERROR_LED	5
 
+/* enumerated that defines the status of BME280 */
+#define NO_ERROR			0
+#define BME280_INIT_ERROR	1
+
 /* miscellanea */
 #define TASK_TIME	10	// Cycle time (10 ms)
 #define ulong		unsigned long int	

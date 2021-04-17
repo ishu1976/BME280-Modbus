@@ -28,13 +28,14 @@ ModbusSerial ModbusRTU;
 #define DEW_POINT_HREG				104		// register 104, dew point temperature - calculated
 #define HEAT_INDEX					105		// register 105, heat index temperature - calculated
 #define ABS_HUMIDITY_HREG			106		// register 106, absolute humidity - calculated
+#define BOARD_STATUS_HREG			107		// register 107, status of running program on the board
 
 /* modbus holding registers - write */
 #define WEATER_DATA_REFRESH_TIME	200		// register 200
-#define ACTUAL_WIND_VELOCITY		201		// register 201
-#define WIND_VELOCITY_THRESHOLD		202		// register 202
-#define TEMPERATURE_THRESHOLD		203		// register 203
-#define FAN_ON_TIME_HREG			204		// register 204
-#define FAN_OFF_TIME_HREG			205		// register 205
+#define WIND_VELOCITY_THRESHOLD		201		// register 201
+#define TEMPERATURE_THRESHOLD		202		// register 202
+#define FAN_ON_TIME_HREG			203		// register 203
+#define FAN_OFF_TIME_HREG			204		// register 204
+#define ACTUAL_WIND_VELOCITY		205		// register 205
 
 #endif

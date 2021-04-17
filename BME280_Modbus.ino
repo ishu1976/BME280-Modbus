@@ -38,46 +38,49 @@
 #include "include/Functions.h"
 
 #pragma region DECLARATIONS
-/* local defines */
-#define REFRESH_TIME_DEFAULT_VALUE	15	// set 15 second of default refresh time
-#define FAN_ON_TIME_DEFAULT_VALUE	240	// set to 4 min.
-#define FAN_OFF_TIME_DEFAULT_VALUE	30	// set to 30 sec.
-#define SERIAL_PRINT					// comment this define to deactivate print on serial monitor
+	/* local defines */
+	#define REFRESH_TIME_DEFAULT_VALUE	15	// set 15 second of default refresh time
+	#define FAN_ON_TIME_DEFAULT_VALUE	240	// set to 4 min.
+	#define FAN_OFF_TIME_DEFAULT_VALUE	30	// set to 30 sec.
+	#define SERIAL_PRINT					// comment this define to deactivate print on serial monitor
 
-/* step of fan controller */
-#define VENTILATION_IDLE			0
-#define VENTILATION_ACTIVE			1
-#define VENTILATION_INACTIVE		2
+	/* step of fan controller */
+	#define VENTILATION_IDLE			0
+	#define VENTILATION_ACTIVE			1
+	#define VENTILATION_INACTIVE		2
 
-/* global var declaration*/
-char softwareVersion[]	= "2104.07";		// software version
-ulong millisAtLoopBegin	= 0;				// millis value at the begin of loop
-word fanControlStep		= VENTILATION_IDLE;
-bool setupIsDone		= false;			// is TRUE when setup is completed with no error
-word actualWindVelocity	= 0; 
+	/* global var declaration*/
+	char softwareVersion[]	= "2104.07";		// software version
+	ulong millisAtLoopBegin	= 0;				// millis value at the begin of loop
+	word fanControlStep		= VENTILATION_IDLE;
+	bool setupIsDone		= false;			// is TRUE when setup is completed with no error
+	word actualWindVelocity	= 0; 
 
-/* structured global var for timing */
-ST_Timer stRefreshTimer;
-ST_Timer stFanOnTimer;
-ST_Timer stFanOffTimer;
-ST_Comparator stTemperature;
-ST_Comparator stWindVelocity;
+	/* structured global var for timing */
+	ST_Timer stRefreshTimer;
+	ST_Timer stFanOnTimer;
+	ST_Timer stFanOffTimer;
+	ST_Comparator stTemperature;
+	ST_Comparator stWindVelocity;
 
-/* output connected var */
-int doRunState		= LOW;	// rapresents the state of GREEN led on sensor board
-int doErrorState	= LOW;	// rapresents the state of RED led on sensor board
-int doFanState		= LOW;	// represents the state of sensor fan
+	/* output connected var */
+	int doRunState		= LOW;	// rapresents the state of GREEN led on sensor board
+	int doErrorState	= LOW;	// rapresents the state of RED led on sensor board
+	int doFanState		= LOW;	// represents the state of sensor fan
 
-/* data read from BME280 */
-word actualTemperature	= 0;
-word actualPressure		= 0;
-word actualHumidity		= 0;
+	/* status var */
+	word boardStatus = NO_ERROR;
 
-/* data calculated */
-word wetBulbTemperature	= 0;
-word dewPoint			= 0;
-word heatIndex			= 0;
-word absHumidity		= 0;
+	/* data read from BME280 */
+	word actualTemperature	= 0;
+	word actualPressure		= 0;
+	word actualHumidity		= 0;
+
+	/* data calculated */
+	word wetBulbTemperature	= 0;
+	word dewPoint			= 0;
+	word heatIndex			= 0;
+	word absHumidity		= 0;
 #pragma endregion
 
 /* the setup function runs once when you press reset or power the board */
@@ -175,13 +178,14 @@ void setup()
 	ModbusRTU.addHreg(DEW_POINT_HREG, dewPoint);
 	ModbusRTU.addHreg(HEAT_INDEX, heatIndex);
 	ModbusRTU.addHreg(ABS_HUMIDITY_HREG, absHumidity);
+	ModbusRTU.addHreg(BOARD_STATUS_HREG, boardStatus);
 	/* add registers to modbus configuration: write holding registers*/
 	ModbusRTU.addHreg(WEATER_DATA_REFRESH_TIME, stRefreshTimer.PT);
 	ModbusRTU.addHreg(ACTUAL_WIND_VELOCITY, actualWindVelocity);
-	ModbusRTU.addHreg(WIND_VELOCITY_THRESHOLD, stWindVelocity.threshold);
 	ModbusRTU.addHreg(TEMPERATURE_THRESHOLD, stTemperature.threshold);
 	ModbusRTU.addHreg(FAN_ON_TIME_HREG, stFanOnTimer.PT);
 	ModbusRTU.addHreg(FAN_OFF_TIME_HREG, stFanOffTimer.PT);
+	ModbusRTU.addHreg(WIND_VELOCITY_THRESHOLD, stWindVelocity.threshold);
 	/* modbus configuration completed */
 	Serial.println(F("done!"));
 	Serial.println();
@@ -200,25 +204,28 @@ void loop()
 		/* only needed in forced mode! In normal mode, you can remove the next line. */
 		BME280.takeForcedMeasurement();
 		/* notify correct execution of setup */
-		doRunState = HIGH;
+		doRunState   = HIGH;
 		doErrorState = LOW;
+		boardStatus  = NO_ERROR;
 	}
 	else
 	{
 		/* notify error during setup */
-		doRunState = LOW;
+		doRunState   = LOW;
 		doErrorState = HIGH;
+		boardStatus  = BME280_INIT_ERROR;
 	}
 
 	/* call once inside loop() */
 	ModbusRTU.task();
 
-	/* update Modbus configuration registers */
-	stRefreshTimer.PT	= constrain(ModbusRTU.Hreg(WEATER_DATA_REFRESH_TIME), 1, 240);		// min: 1 sec.  max: 240 sec. (4 min.)
-	stFanOffTimer.PT	= constrain(ModbusRTU.Hreg(FAN_OFF_TIME_HREG), 30, 600);			// min: 30 sec. max: 600 sec. (10 min.)
-	stFanOnTimer .PT	= constrain(ModbusRTU.Hreg(FAN_ON_TIME_HREG), 30, 600);				// min: 30 sec. max: 600 sec. (10 min.)
-	stWindVelocity.threshold = constrain(ModbusRTU.Hreg(WIND_VELOCITY_THRESHOLD), 10, 100);	// min: 1.0 m/s max: 10.0 m/s
-	stTemperature.threshold  = constrain(ModbusRTU.Hreg(TEMPERATURE_THRESHOLD), 100, 350);	// min: 10°C.   max: 35°C
+	/* read data from Modbus Holding registers (master node write this vaules) */
+	stRefreshTimer.PT			= constrain(ModbusRTU.Hreg(WEATER_DATA_REFRESH_TIME), 1, 240);	// min: 1 sec.  max: 240 sec. (4 min.)
+	stFanOffTimer.PT			= constrain(ModbusRTU.Hreg(FAN_OFF_TIME_HREG), 30, 600);		// min: 30 sec. max: 600 sec. (10 min.)
+	stFanOnTimer .PT			= constrain(ModbusRTU.Hreg(FAN_ON_TIME_HREG), 30, 600);			// min: 30 sec. max: 600 sec. (10 min.)
+	stWindVelocity.threshold	= constrain(ModbusRTU.Hreg(WIND_VELOCITY_THRESHOLD), 10, 100);	// min: 1.0 m/s max: 10.0 m/s
+	stTemperature.threshold		= constrain(ModbusRTU.Hreg(TEMPERATURE_THRESHOLD), 100, 350);	// min: 10°C.   max: 35°C
+	actualWindVelocity			= ModbusRTU.Hreg(ACTUAL_WIND_VELOCITY, actualWindVelocity);
 
 	/* get values only if setup is done (otherwise it means that the BME280 sensor is in error) */
 	if (setupIsDone)
@@ -233,14 +240,6 @@ void loop()
 		{
 			/* read all weater data from BME280 */
 			F_GetValues();
-			/* Write weater data on Modbus registers */
-			ModbusRTU.Hreg(ACTUAL_TEMPERATURE_HREG, actualTemperature);
-			ModbusRTU.Hreg(ACTUAL_PRESSURE_HREG, actualPressure);
-			ModbusRTU.Hreg(ACTUAL_HUMIDITY_HREG, actualHumidity);
-			ModbusRTU.Hreg(WET_BULB_TEMPERATURE_HREG, wetBulbTemperature);
-			ModbusRTU.Hreg(DEW_POINT_HREG, dewPoint);
-			ModbusRTU.Hreg(HEAT_INDEX, heatIndex);
-			ModbusRTU.Hreg(ABS_HUMIDITY_HREG, absHumidity);
 		}
 
 		/* check if temperature or wind speed allows to switch off the ventilation */
@@ -329,13 +328,23 @@ void loop()
 		}
 	}
 
+	/* write data on Modbus Holding registers (master node read this vaules) */
+	ModbusRTU.Hreg(ACTUAL_TEMPERATURE_HREG, actualTemperature);
+	ModbusRTU.Hreg(ACTUAL_PRESSURE_HREG, actualPressure);
+	ModbusRTU.Hreg(ACTUAL_HUMIDITY_HREG, actualHumidity);
+	ModbusRTU.Hreg(WET_BULB_TEMPERATURE_HREG, wetBulbTemperature);
+	ModbusRTU.Hreg(DEW_POINT_HREG, dewPoint);
+	ModbusRTU.Hreg(HEAT_INDEX, heatIndex);
+	ModbusRTU.Hreg(ABS_HUMIDITY_HREG, absHumidity);
+	ModbusRTU.Hreg(BOARD_STATUS_HREG, boardStatus);
+
 	/* write digital output */
 	digitalWrite(RUN_LED, doRunState);
 	digitalWrite(ERROR_LED, doErrorState);
 	digitalWrite(FAN, doFanState);
 	
 	/* END LOOP: wait task time (every loop has a fixed duration) */
-	while ((millis() - millisAtLoopBegin) <= TASK_TIME);
+	while (abs(millis() - millisAtLoopBegin) <= TASK_TIME);
 }
 
 /* cyclic function used to read data from BME280 sensor */
@@ -355,7 +364,7 @@ void F_GetValues()
 	float _heatIndex			= GetHeatIndex	(_actualTemperature, _actualHumidity, isCelsius);
 	float _absHumidity			= GetAbsHumidity(_actualTemperature, _actualHumidity, isCelsius);
 
-	/* conversion */
+	/* conversion in word format just to write values in Modbus registers */
 	actualTemperature	= F_FloatToWord(_actualTemperature, 1);
 	actualPressure		= F_FloatToWord(_actualPressure, 1);
 	actualHumidity		= F_FloatToWord(_actualHumidity, 1);

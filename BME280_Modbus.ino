@@ -2,11 +2,25 @@
  Name:			BME280_Modbus.ino
  Created:		07/04/2021 20:19:39
  Author:		Andrea Santinelli
-  
- A simple Arduino Nano based board used to read data from a BME280 sensor and transmit it via Modbus RTU to the main weater station.
- The card returns the main temperature parameters. It also has an automatic ventilation control to avoid BME280 sensor reading errors caused by stagnant air inside the sun shield. 
+   
+ A simple Arduino Nano based board used to read data from a BME280 sensor.
+ It also has an automatic ventilation control to avoid BME280 sensor reading errors caused by stagnant air inside the sun shield.
  All the data collected and calculated are transmitted to the weather station by means of the Modbus RTU protocol (RS485) operating at the speed of 9600 bit/s.
-
+ 
+ Copyright: 2021 Andrea Santinelli
+ 
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+ 
+ http://www.apache.org/licenses/LICENSE-2.0
+ 
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ 
  Libraries used in the project:
  - https://github.com/adafruit/Adafruit_BME280_Library
  - https://github.com/andresarmento/modbus-arduino

@@ -123,7 +123,6 @@
     </ClInclude>
     <ClInclude Include="include\ModbusCfg.h" />
     <ClInclude Include="__vm\.BME280-Modbus.vsarduino.h" />
-    <ClInclude Include="__vm\.BME280_Modbus.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\Functions.cpp" />

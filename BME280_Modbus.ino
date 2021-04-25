@@ -176,7 +176,7 @@ void setup()
 	ModbusRTU.addHreg(ACTUAL_HUMIDITY_HREG, actualHumidity);
 	ModbusRTU.addHreg(WET_BULB_TEMPERATURE_HREG, wetBulbTemperature);
 	ModbusRTU.addHreg(DEW_POINT_HREG, dewPoint);
-	ModbusRTU.addHreg(HEAT_INDEX, heatIndex);
+	ModbusRTU.addHreg(HEAT_INDEX_HREG, heatIndex);
 	ModbusRTU.addHreg(ABS_HUMIDITY_HREG, absHumidity);
 	ModbusRTU.addHreg(BOARD_STATUS_HREG, boardStatus);
 	/* add registers to modbus configuration: write holding registers*/
@@ -334,7 +334,7 @@ void loop()
 	ModbusRTU.Hreg(ACTUAL_HUMIDITY_HREG, actualHumidity);
 	ModbusRTU.Hreg(WET_BULB_TEMPERATURE_HREG, wetBulbTemperature);
 	ModbusRTU.Hreg(DEW_POINT_HREG, dewPoint);
-	ModbusRTU.Hreg(HEAT_INDEX, heatIndex);
+	ModbusRTU.Hreg(HEAT_INDEX_HREG, heatIndex);
 	ModbusRTU.Hreg(ABS_HUMIDITY_HREG, absHumidity);
 	ModbusRTU.Hreg(BOARD_STATUS_HREG, boardStatus);
 

@@ -26,7 +26,7 @@ ModbusSerial ModbusRTU;
 #define ACTUAL_HUMIDITY_HREG		102		// register 102, actual humidity read by sensor BME280
 #define WET_BULB_TEMPERATURE_HREG	103		// register 103, wet bulb temperature - calculated
 #define DEW_POINT_HREG				104		// register 104, dew point temperature - calculated
-#define HEAT_INDEX					105		// register 105, heat index temperature - calculated
+#define HEAT_INDEX_HREG				105		// register 105, heat index temperature - calculated
 #define ABS_HUMIDITY_HREG			106		// register 106, absolute humidity - calculated
 #define BOARD_STATUS_HREG			107		// register 107, status of running program on the board
 
